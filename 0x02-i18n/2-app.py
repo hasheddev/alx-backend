@@ -18,8 +18,7 @@ babel = Babel()
 
 def get_locale() -> str:
     """ returns the best match with app supported languages """
-    languages = app.config['LANGUAGES']
-    print(languages)
+    languages = app.config["LANGUAGES"]
     return request.accept_languages.best_match(languages)
 
 
