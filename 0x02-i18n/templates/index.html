@@ -11,5 +11,8 @@
 	{% else %}
 		<p>{{ _("not_logged_in") }}</p>
 	{% endif %}
+	{% if g.formatted_time %}
+		<p>{{ _("current_time_is", current_time=g.formatted_time) }}</p>
+	{% endif %}
 </body>
 </html>

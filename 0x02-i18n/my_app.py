@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, g
 from flask_babel import Babel
 from typing import Dict
 import pytz
+from datetime import datetime
 
 
 class Config:
@@ -15,7 +16,7 @@ class Config:
 
 app = Flask(__name__)
 app.config.from_object(Config)
-babel = Babel(app)
+babel = Babel()
 users = {
     1: {"name": "Balou", "locale": "fr", "timezone": "Europe/Paris"},
     2: {"name": "Beyonce", "locale": "en", "timezone": "US/Central"},
@@ -33,17 +34,10 @@ def get_user() -> Dict:
     return None
 
 
-@app.before_request
-def before_request() -> None:
-    """ Adds user to a fask global user variable """
-    g.user = get_user()
-
-
-@babel.localeselector
 def get_locale() -> str:
     """ returns the best match with app supported languages """
-    lang = request.args.get("locale", None)
     languages = app.config["LANGUAGES"]
+    lang = request.args.get("locale", None)
     if lang in languages:
         return lang
     if g.user:
@@ -56,23 +50,36 @@ def get_locale() -> str:
     return request.accept_languages.best_match(languages)
 
 
-@babel.timezoneselector
 def get_timezone():
-    """ returns the best match with app supported languages """
+    """ returns the best match with user timezone """
     time_zone = request.args.get("timezone", None)
     if time_zone:
         try:
-            zone = pytz.timezone(time_zone).zone
-            return zone
+            zone = pytz.timezone(time_zone)
+            return zone.zone
         except pytz.exceptions.UnknownTimeZoneError:
             pass
     return app.config["BABEL_DEFAULT_TIMEZONE"]
 
 
+@app.before_request
+def before_request() -> None:
+    """ Adds user to a fask global user variable """
+    g.user = get_user()
+    time_now = datetime.now(tz=pytz.UTC)
+    locale = get_timezone()
+    user_local_time = time_now.astimezone(pytz.timezone(locale))
+    time_format = "%b %d, %Y %I:%M:%S %p"
+    g.formatted_time = user_local_time.strftime(time_format)
+
+
+babel.init_app(app, locale_selector=get_locale, timezone_selector=get_timezone)
+
+
 @app.route("/", strict_slashes=False)
 def index() -> str:
     """ route for / page """
-    return render_template('7-index.html')
+    return render_template('index.html')
 
 
 if __name__ == "__main__":

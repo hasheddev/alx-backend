@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, g
 from flask_babel import Babel
 from typing import Dict
 import pytz
+from datetime import datetime
 
 
 class Config:
@@ -31,12 +32,6 @@ def get_user() -> Dict:
     if user_id is not None and int(user_id) in users:
         return users.get(int(user_id))
     return None
-
-
-@app.before_request
-def before_request() -> None:
-    """ Adds user to a fask global user variable """
-    g.user = get_user()
 
 
 @babel.localeselector
@@ -69,10 +64,21 @@ def get_timezone():
     return app.config["BABEL_DEFAULT_TIMEZONE"]
 
 
+@app.before_request
+def before_request() -> None:
+    """ Adds user to a fask global user variable """
+    g.user = get_user()
+    time_now = datetime.now(tz=pytz.UTC)
+    locale = get_timezone()
+    user_local_time = time_now.astimezone(pytz.timezone(locale))
+    time_format = "%b %d, %Y %I:%M:%S %p"
+    g.formatted_time = user_local_time.strftime(time_format)
+
+
 @app.route("/", strict_slashes=False)
 def index() -> str:
     """ route for / page """
-    return render_template('7-index.html')
+    return render_template('index.html')
 
 
 if __name__ == "__main__":
